@@ -121,13 +121,14 @@ class MyDeque {
         // ----
 
         allocator_type _a;
-        T** deque;
+        typename A::template rebind<T*>::other _aPointer;
+        pointer* deque;
+        pointer _front;
+        pointer _back;
         int rows;
         int columns;
         int _size;
-        T* _front;
-        T* _back;
-        // <your data>
+        int num_rows;
 
     private:
         // -----
@@ -149,11 +150,11 @@ class MyDeque {
                 // typedefs
                 // --------
 
-                typedef std::bidirectional_iterator_tag iterator_category;
-                typedef typename MyDeque::value_type value_type;
+                typedef std::bidirectional_iterator_tag   iterator_category;
+                typedef typename MyDeque::value_type      value_type;
                 typedef typename MyDeque::difference_type difference_type;
-                typedef typename MyDeque::pointer pointer;
-                typedef typename MyDeque::reference reference;
+                typedef typename MyDeque::pointer         pointer;
+                typedef typename MyDeque::reference       reference;
 
             public:
                 // -----------
@@ -212,7 +213,7 @@ class MyDeque {
                 pointer end;
                 int size;
                 int idx;
-                T** row;
+                pointer* itr;
                 
                 // <your data>
 
@@ -516,19 +517,52 @@ class MyDeque {
         /**
          * Default constructor
          */
-        explicit MyDeque (const allocator_type& a = allocator_type()) {
-            _a = a;
-            _size = 0;
-            deque = 
+        explicit MyDeque (const allocator_type& a = allocator_type()) : _a(a) {
             rows = 10;
             columns = 10;
+            deque = _aPointer.allocate(rows);
+            num_rows = 0;
+            _front = 0;
+            _back = _front;
             assert(valid());}
 
         /**
          * Constructor
          */
-        explicit MyDeque (size_type s, const_reference v = value_type(), const allocator_type& a = allocator_type()) {
-            // <your code>
+        explicit MyDeque (size_type s, const_reference v = value_type(), const allocator_type& a = allocator_type()) : _a(a) {
+            _size = s;
+            int row_size = s / 10;
+            if (s % 10 > 0)
+                ++row_size;
+            int capacity = row_size * 10;
+            deque = _aPointer.allocate(row_size);
+            for (int i = 0; i < row_size; ++i)
+                *(deque + i) = _a.allocate(10);
+
+            int temp_s = s;
+            if (s <= 10) {
+                uninitialized_fill(_a, *deque, *deque + s, v);
+                _front = *deque;
+                _back = *deque + s;
+            }
+            else {
+                int row = 0;
+                int begin = (capacity - s) / 2;
+                uninitialized_fill(_a, *(deque + row) + begin, *(deque + row) + 10, v);
+                _front = *deque + begin;
+                ++row;
+                temp_s -= (10 - begin);
+                while (temp_s > 10) {
+                    uninitialized_fill(_a, *(deque + row), *(deque + row) + 10, v);
+                    temp_s -= 10;
+                    ++row;
+                }
+                if (temp_s > 0) 
+                    uninitialized_fill(_a, *(deque + row), *(deque + row) + temp_s, v);
+                if (temp_s == 0)
+                    temp_s = 10;
+                _back = *deque + temp_s;
+            }
             assert(valid());}
 
         /**
