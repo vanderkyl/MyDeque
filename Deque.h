@@ -122,13 +122,17 @@ class MyDeque {
 
         allocator_type _a;
         typename A::template rebind<T*>::other _aPointer;
+
         pointer* deque;
+        pointer* _outerFront;
+        pointer* _outerBack;
         pointer _front;
         pointer _back;
+
         int rows;
         int columns;
         int _size;
-        int num_rows;
+
 
     private:
         // -----
@@ -208,14 +212,12 @@ class MyDeque {
                 // data
                 // ----
 
-                pointer ptr;
-                pointer begin;
-                pointer end;
-                int size;
+                pointer* _itr;
+                pointer _ptr;
+                pointer _b;
+                pointer _e;
+                int i_size;
                 int idx;
-                pointer* itr;
-                
-                // <your data>
 
             private:
                 // -----
@@ -223,8 +225,7 @@ class MyDeque {
                 // -----
 
                 bool valid () const {
-                    // <your code>
-                    return true;}
+                    return ((sizeof(*ptr) == sizeof(T)) || !ptr);}
 
             public:
                 // -----------
@@ -234,11 +235,11 @@ class MyDeque {
                 /**
                  * <your documentation>
                  */
-                iterator (T* v, int index, int s, T* b, T* e) : ptr(v) {
+                iterator (pointer v, int index, int s, pointer b, pointer e) : ptr(v) {
                     idx = index;
-                    size = s;
-                    begin = b;
-                    end = e;
+                    i_size = s;
+                    _b = b;
+                    _e = e;
                     assert(valid());}
 
                 // Default copy, destructor, and copy assignment.
@@ -515,19 +516,19 @@ class MyDeque {
         // ------------
 
         /**
-         * Default constructor
+         * Default constructor with defaulted allocator argument.
          */
         explicit MyDeque (const allocator_type& a = allocator_type()) : _a(a) {
-            rows = 10;
-            columns = 10;
-            deque = _aPointer.allocate(rows);
-            num_rows = 0;
+            deque = _aPointer.allocate(10);
             _front = 0;
             _back = _front;
+            _outerFront = deque;
+            _outerBack = deque + 10;
             assert(valid());}
 
         /**
-         * Constructor
+         * Constructor with three arguments: size, fill value, and allocator.
+         * Size is the only non-defaulted argument.
          */
         explicit MyDeque (size_type s, const_reference v = value_type(), const allocator_type& a = allocator_type()) : _a(a) {
             _size = s;
@@ -563,13 +564,26 @@ class MyDeque {
                     temp_s = 10;
                 _back = *deque + temp_s;
             }
+            _outerFront = deque;
+            _outerBack = deque + row_size;
             assert(valid());}
 
         /**
          * Copy constructor
          */
-        MyDeque (const MyDeque& that) {
-            // <your code>
+        MyDeque (const MyDeque& that) : _a(that._a), _aPointer(that._aPointer){
+            _size = that._size;
+            int row_size = _size / 10;
+            if (_size % 10 > 0) 
+                ++row_size;
+            int capacity = row_size * 10;
+            deque = _aPointer.allocate(row_size);
+            for (int i = 0; i < row_size; ++row_size)
+                *(deque + i) = _a.allocate(10);
+
+            if (_size <= 10) {
+
+            }
             assert(valid());}
 
         // ----------
@@ -591,7 +605,25 @@ class MyDeque {
          * <your documentation>
          */
         MyDeque& operator = (const MyDeque& rhs) {
-            // <your code>
+            if (this == &rhs)
+                return *this;
+            if (rhs.size() == size())
+                std::copy(rhs.begin(), rhs.end(), begin());
+            else if (rhs.size() < size()) {
+                std::copy(rhs.begin(), rhs.end(), begin());
+                resize(rhs.size());)
+            }
+            else if (rhs.size() <= capacity()) {
+                std::copy(rhs.begin(), rhs.begin() + size(), begin());
+                _back = uninitialized_copy(_a, rhs.begin() + size(), rhs.end(), end());
+                _size = rhs.size();
+            }
+            else {
+                clear();
+                if (rhs.size() > capacity()) {
+
+                }
+            }
             assert(valid());
             return *this;}
 
@@ -657,15 +689,15 @@ class MyDeque {
         // -----
 
         /**
-* <your documentation>
-*/
+         * <your documentation>
+         */
         iterator begin () {
             // <your code>
             return iterator(/* <your arguments> */);}
 
         /**
-* <your documentation>
-*/
+         * <your documentation>
+         */
         const_iterator begin () const {
             // <your code>
             return const_iterator(/* <your arguments> */);}
@@ -675,15 +707,11 @@ class MyDeque {
         // -----
 
         /**
-* <your documentation>
-*/
+         *
+         */
         void clear () {
-            // <your code>
-            assert(valid());}
 
-        // -----
-        // empty
-        // -----
+        }
 
         /**
 * <your documentation>
