@@ -29,6 +29,7 @@ using std::rel_ops::operator>=;
 
 using namespace std;
 
+
 // -------
 // destroy
 // -------
@@ -140,15 +141,11 @@ class MyDeque {
         pointer _front;
         pointer _back;
         
-
-        pointer* _start;
         pointer* _outerFront;
-        pointer* _outerBack;
 
         unsigned int _size;
         unsigned int _capacity;
         int _rows;
-        int _columns;
         
 
     private:
@@ -158,10 +155,10 @@ class MyDeque {
 
       bool valid () const {
           int row = _size / 10;
-          if((_front == *_start) && _size % 10 == 0 && _size > 0) {
+          if((_front == *_outerFront) && _size % 10 == 0 && _size > 0) {
               --row;
           }
-          return (!_front && !_back && !_outerFront && !_outerBack) || ((_front < *_start + _columns) && (_back <= *(_start + row) + _columns));}
+          return (!_front && !_back && !_outerFront) || ((_front < *_outerFront + 10) && (_back <= *(_outerFront + row) + 10));}
 
     public:
         // --------
@@ -487,12 +484,13 @@ class MyDeque {
                 // data
                 // ----
 
-                pointer _cp;
                 const pointer* _r;
-                int _idx;
-                int _size;
+                pointer _cp;
                 pointer _ce;
                 pointer _cb;
+
+                int _idx;
+                int _size;
 
             private:
                 // -----
@@ -554,16 +552,12 @@ class MyDeque {
                 // -----------
 
                 /**
-* increments this by one (post-increment).
-*/
+                 * increments this by one (post-increment).
+                 */
                 const_iterator& operator ++ () {
                     if((_cp + 1) == _ce)
-                    {
                         _cp = _ce;
-                    }
-                    else if((_idx == 9 && _cp != _ce) ||
-                           (_idx == 10 && _cp == _ce))
-                    {
+                    else if((_idx == 9 && _cp != _ce) || (_idx == 10 && _cp == _ce)) {
                         _r = _r + 1;
                         if(_cp == _ce)
                           _idx = 1;
@@ -677,10 +671,112 @@ class MyDeque {
                     assert(valid());
                     return *this;}};
 
-    private:
 
-        MyDeque (const MyDeque& that, size_type c){
-            _a = that._a;
+    public:
+        // ------------
+        // constructors
+        // ------------
+
+        /**
+         * default constructor.
+        */
+        explicit MyDeque (const allocator_type& a = allocator_type()) : _a(a) {
+            _rows = 10;
+            _capacity = 0;
+            deque = _aPointer.allocate(_rows);
+            _size = 0;
+            _front = 0;
+            _back = _front;
+            _outerFront = deque;
+            assert(valid());}
+
+        /**
+* constructor with specifications for size, value, and allocator.
+*/
+        explicit MyDeque (size_type s, const_reference v = value_type(), const allocator_type& a = allocator_type()) : _a(a) {
+            _size = s;
+            _capacity = s;
+            while(_capacity % 10 != 0)
+                _capacity++;
+            _rows = _capacity / 10;
+            deque = _aPointer.allocate(_rows);
+            for(int i = 0; i < _rows; i++)
+                *(deque + i) = _a.allocate(10);
+            int hml = _size;
+            if(_size >= 10){
+                int start = (_capacity - _size) / 2;
+                uninitialized_fill(_a, *deque + start, *deque + 10, v);
+                hml = hml - (10 - start);
+                int counter = 1;
+                while(hml > 10)
+                {
+                    uninitialized_fill(_a, *(deque + counter), *(deque + counter) + 10, v);
+                    hml -= 10;
+                    counter++;
+                }
+                if(hml > 0){
+                    uninitialized_fill(_a, *(deque + counter), *(deque + counter) + hml, v);
+                }
+                _front = *deque + start;
+                if(hml == 0)
+                    hml = 10;
+                _back = *(deque + (_rows - 1)) + hml;
+            }
+            else
+            {
+                uninitialized_fill(_a, *deque, *deque + hml, v);
+                _front = *deque;
+                _back = *deque + hml;
+            }
+            _outerFront = deque;
+            assert(valid());}
+
+        /**
+* copy constructor.
+*/
+        MyDeque (const MyDeque& that) : _a(that._a), _aPointer(that._aPointer) {
+            _size = that._size;
+            _capacity = _size;
+            while(_capacity % 10 != 0)
+              _capacity++;
+            _rows = _capacity/10;
+            if(_rows == 0)
+                _rows = 1;
+            deque = _aPointer.allocate(_rows);
+            for(int i = 0; i < _rows; i++)
+              *(deque + i) = _a.allocate(10);
+            int hml = _size;
+            if(_size < 10)
+            {
+                int start = (_capacity - _size) / 2;
+                uninitialized_copy(_a, that._front, *that._outerFront + 10, *deque + start);
+                hml = hml - (10 - start);
+                int counter = 0;
+                while(hml > 10)
+                {
+                    counter++;
+                    uninitialized_copy(_a, *(that._outerFront + counter), *(that._outerFront + counter) + 10, *(deque + counter));
+                    hml -= 10;
+                }
+                if(hml > 0){
+                    counter++;
+                    uninitialized_copy(_a, *(that._outerFront + counter), that._back, *(deque + counter));
+                }
+                _front = *deque + start;
+                _back = *(deque + counter) + hml;
+            }
+            else
+            {
+                int start = (_capacity - _size) / 2;
+                uninitialized_copy(_a, that._front, that._back, *deque + start);
+                _front = *deque + start;
+                _back = *deque + hml;
+            }
+            _outerFront = deque;
+            assert(valid());}
+
+
+        MyDeque (const MyDeque& that, size_type c) {
             _aPointer = that._aPointer;
             _size = that._size;
             _capacity = c;
@@ -691,10 +787,9 @@ class MyDeque {
             int hml = _size;
             if(_rows == 0)
                 _rows = 1;
-            _columns = that._columns;
             deque = _aPointer.allocate(_rows);
             for(int i = 0; i < _rows; i++)
-              *(deque + i) = _a.allocate(_columns);
+              *(deque + i) = _a.allocate(10);
             if(that._size <= 10)
             {
                 uninitialized_copy(_a, that.begin(), that.end(), *deque);
@@ -716,143 +811,25 @@ class MyDeque {
             }
             _front = *deque;
             _back = *(deque + thatRow) + hml;
-            _start = deque;
             _outerFront = deque;
-            _outerBack = _outerFront + _rows;
             assert(valid());
         }
-
-    public:
-        // ------------
-        // constructors
-        // ------------
-
-        /**
-* default constructor.
-*/
-        explicit MyDeque (const allocator_type& a = allocator_type()) {
-            _a = a;
-            _rows = 10;
-            _columns = 10;
-            _capacity = 0;
-            deque = _aPointer.allocate(_rows);
-            _size = 0;
-            _front = 0;
-            _back = _front;
-            _start = deque;
-            _outerFront = deque;
-            _outerBack = _outerFront + _rows;
-            assert(valid());}
-
-        /**
-* constructor with specifications for size, value, and allocator.
-*/
-        explicit MyDeque (size_type s, const_reference v = value_type(), const allocator_type& a = allocator_type()) {
-            _a = a;
-            _size = s;
-            _capacity = s;
-            while(_capacity % 10 != 0)
-                _capacity++;
-            _rows = _capacity / 10;
-            _columns = 10;
-            deque = _aPointer.allocate(_rows);
-            for(int i = 0; i < _rows; i++)
-                *(deque + i) = _a.allocate(_columns);
-            int hml = _size;
-            if(_size >= 10){
-                int start = (_capacity - _size) / 2;
-                uninitialized_fill(_a, *deque + start, *deque + _columns, v);
-                hml = hml - (_columns - start);
-                int counter = 1;
-                while(hml > 10)
-                {
-                    uninitialized_fill(_a, *(deque + counter), *(deque + counter) + _columns, v);
-                    hml -= 10;
-                    counter++;
-                }
-                if(hml > 0){
-                    uninitialized_fill(_a, *(deque + counter), *(deque + counter) + hml, v);
-                }
-                _front = *deque + start;
-                if(hml == 0)
-                    hml = 10;
-                _back = *(deque + (_rows - 1)) + hml;
-            }
-            else
-            {
-                uninitialized_fill(_a, *deque, *deque + hml, v);
-                _front = *deque;
-                _back = *deque + hml;
-            }
-            _start = deque;
-            _outerFront = deque;
-            _outerBack = _outerFront + _rows;
-            assert(valid());}
-
-        /**
-* copy constructor.
-*/
-        MyDeque (const MyDeque& that) {
-            _a = that._a;
-            _aPointer = that._aPointer;
-            _size = that._size;
-            _capacity = _size;
-            while(_capacity % 10 != 0)
-              _capacity++;
-            _rows = _capacity/10;
-            if(_rows == 0)
-                _rows = 1;
-            _columns = that._columns;
-            deque = _aPointer.allocate(_rows);
-            for(int i = 0; i < _rows; i++)
-              *(deque + i) = _a.allocate(_columns);
-            int hml = _size;
-            if(_size < 10)
-            {
-                int start = (_capacity - _size) / 2;
-                uninitialized_copy(_a, that._front, *that._start + _columns, *deque + start);
-                hml = hml - (_columns - start);
-                int counter = 0;
-                while(hml > 10)
-                {
-                    counter++;
-                    uninitialized_copy(_a, *(that._start + counter), *(that._start + counter) + _columns, *(deque + counter));
-                    hml -= 10;
-                }
-                if(hml > 0){
-                    counter++;
-                    uninitialized_copy(_a, *(that._start + counter), that._back, *(deque + counter));
-                }
-                _front = *deque + start;
-                _back = *(deque + counter) + hml;
-            }
-            else
-            {
-                int start = (_capacity - _size) / 2;
-                uninitialized_copy(_a, that._front, that._back, *deque + start);
-                _front = *deque + start;
-                _back = *deque + hml;
-            }
-            _start = deque;
-            _outerFront = deque;
-            _outerBack = _outerFront + _rows;
-            assert(valid());}
 
         // ----------
         // destructor
         // ----------
 
         /**
-* destructor.
-*/
-            ~MyDeque () {
-                if(_front)
-                {
-                    clear();
-                    for(int i = 0; i < _rows; i++)
-                        _a.deallocate(*(deque + i), _columns);
-                    _aPointer.deallocate(deque, _rows);
-                }
+         * destructor.
+         */
+        ~MyDeque () {
+            if(_front)
+            {
+                clear();
+                for(int i = 0; i < _rows; i++)
+                    _a.deallocate(*(deque + i), 10);
+                _aPointer.deallocate(deque, _rows);
+            }
                 /*assert(valid());*/}
 
 
@@ -960,13 +937,13 @@ class MyDeque {
 * returns the very first element.
 */
         iterator begin () {
-            return iterator(_front, _start, _front - *_start, _size, _back, _front);}
+            return iterator(_front, _outerFront, _front - *_outerFront, _size, _back, _front);}
 
         /**
 * returns the very first element.
 */
         const_iterator begin () const {
-            return const_iterator(_front, _start, _front - *_start, _size, _back, _front);}
+            return const_iterator(_front, _outerFront, _front - *_outerFront, _size, _back, _front);}
 
         // -----
         // clear
@@ -977,9 +954,9 @@ class MyDeque {
 */
         void clear () {
             destroy(_a, begin(), end());
-            _front = *(deque + (_rows/2)) + (_columns/2);
+            _front = *(deque + (_rows/2)) + 5;
             _back = _front;
-            _start = deque + (_rows/2);
+            _outerFront = deque + (_rows/2);
             _size = 0;
             assert(valid());}
 
@@ -1003,7 +980,7 @@ class MyDeque {
         iterator end () {
             int rowOffset = 0;
             int index = 0;
-            if((_front - *_start) == 0 && (_size%10) == 0)
+            if((_front - *_outerFront) == 0 && (_size%10) == 0)
             {
                 rowOffset = (_size / 10) - 1;
                 index = 10;
@@ -1011,9 +988,9 @@ class MyDeque {
             else
             {
                 rowOffset = _size / 10;
-                index = _back - *(_start + rowOffset);
+                index = _back - *(_outerFront + rowOffset);
             }
-            return iterator(_back, _start + rowOffset, index, _size, _back, _front);}
+            return iterator(_back, _outerFront + rowOffset, index, _size, _back, _front);}
 
         /**
 * returns an iterator pointing to one past the last element in the deque.
@@ -1021,7 +998,7 @@ class MyDeque {
           const_iterator end () const {
             int rowOffset = 0;
             int index = 0;
-            if((_front - *_start) == 0 && (_size%10) == 0)
+            if((_front - *_outerFront) == 0 && (_size%10) == 0)
             {
                 rowOffset = (_size / 10) - 1;
                 index = 10;
@@ -1029,9 +1006,9 @@ class MyDeque {
             else
             {
                 rowOffset = _size / 10;
-                index = _back - *(_start + rowOffset);
+                index = _back - *(_outerFront + rowOffset);
             }
-            return const_iterator(_back, _start + rowOffset, index, _size, _back, _front);}
+            return const_iterator(_back, _outerFront + rowOffset, index, _size, _back, _front);}
 
         // -----
         // erase
@@ -1275,7 +1252,7 @@ _back = (end()-1).i_pointer();
             std::swap(_front, that._front);
             std::swap(_back, that._back);
             std::swap(deque, that.deque);
-            std::swap(_start, that._start);
+            std::swap(_outerFront, that._outerFront);
             int temp_rows = _rows;
             _rows = that._rows;
             that._rows = temp_rows;
