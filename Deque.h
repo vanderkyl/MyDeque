@@ -228,7 +228,6 @@ class MyDeque {
                 // The row that _p is on
                 pointer* _r;
                 pointer _p;
-                pointer _b;
                 pointer _e;
 
                 int _idx;
@@ -250,12 +249,11 @@ class MyDeque {
                 /**
                  * constructs an iterator with value v, row r, index i, size my_size, and end and front.
                  */
-                iterator (T* v, T** r, int i, int my_size, T* my_end, T* my_front) : _p(v){
+                iterator (pointer* r, pointer p, pointer e, int i, int s) : _p(p){
                     _r = r;
+                    _e = e;
                     _idx = i;
-                    _size = my_size;
-                    _b = my_front;
-                    _e = my_end;
+                    _size = s;
                     assert(valid());}
 
                 // Default copy, destructor, and copy assignment.
@@ -370,21 +368,21 @@ class MyDeque {
                  */
                 iterator& operator += (difference_type d) {
                     if((_idx + d > 9 && _p != _e) || (_p == _e && _idx + d > 10)) {
-                    int temp = d - (10 - _idx);
-                    if(!(d <= 10 && *_r + d == _e))
-                        ++_r;
+                    int idx_diff = 10 - _idx;
+                    int temp_d = d - idx_diff;
+                        if(!(d <= 10 && *_r + d == _e))
+                            ++_r;
                         else
-                            temp = d;
-                        while(temp > 9)
-                        {
-                            if(*_r + temp == _e){
+                            temp_d = d;
+                        while(temp_d > 9) {
+                            if(*_r + temp_d == _e) {
                                 break;
                             }
-                            temp -= 10;
+                            temp_d -= 10;
                             ++_r;
                         }
-                        _idx = temp;
-                        _p = *_r + temp;
+                        _idx = temp_d;
+                        _p = *_r + temp_d;
                     }
                     else {
                     _p += d;
@@ -487,7 +485,6 @@ class MyDeque {
                 const pointer* _r;
                 pointer _cp;
                 pointer _ce;
-                pointer _cb;
 
                 int _idx;
                 int _size;
@@ -508,12 +505,11 @@ class MyDeque {
                 /**
                  * constructs an iterator with value v, row r, index i, size my_size, and end and front.
                  */
-                const_iterator (T* v, T** r, int i, int the_size, T* the_end, T* the_front) : _cp(v){
+                const_iterator (const pointer* r, pointer p, pointer e, int i, int s) : _cp(p){
                     _r = r;
+                    _ce = e;
                     _idx = i;
-                    _size = the_size;
-                    _ce = the_end;
-                    _cb = the_front;
+                    _size = s;
                     assert(valid());}
 
                 // Default copy, destructor, and copy assignment.
@@ -833,10 +829,6 @@ class MyDeque {
                 /*assert(valid());*/}
 
 
-        T* get_end(){
-            return _back;
-        }
-
         // ----------
         // operator =
         // ----------
@@ -937,13 +929,15 @@ class MyDeque {
 * returns the very first element.
 */
         iterator begin () {
-            return iterator(_front, _outerFront, _front - *_outerFront, _size, _back, _front);}
+            int index = _front - *_outerFront;
+            return iterator(_outerFront, _front, _back, index, _size);}
 
         /**
 * returns the very first element.
 */
         const_iterator begin () const {
-            return const_iterator(_front, _outerFront, _front - *_outerFront, _size, _back, _front);}
+            int index = _front - *_outerFront;
+            return const_iterator(_outerFront, _front, _back, index, _size);}
 
         // -----
         // clear
@@ -990,7 +984,7 @@ class MyDeque {
                 rowOffset = _size / 10;
                 index = _back - *(_outerFront + rowOffset);
             }
-            return iterator(_back, _outerFront + rowOffset, index, _size, _back, _front);}
+            return iterator(_outerFront + rowOffset, _back, _back, index, _size);}
 
         /**
 * returns an iterator pointing to one past the last element in the deque.
@@ -1008,7 +1002,7 @@ class MyDeque {
                 rowOffset = _size / 10;
                 index = _back - *(_outerFront + rowOffset);
             }
-            return const_iterator(_back, _outerFront + rowOffset, index, _size, _back, _front);}
+            return const_iterator(_outerFront + rowOffset, _back, _back, index, _size);}
 
         // -----
         // erase
@@ -1018,41 +1012,12 @@ class MyDeque {
 * erases the element pointed to by it.
 */
         iterator erase (iterator it) {
-            if(it == begin())
-            {
+            if(it == begin()) {
                 _front = (begin() + 1).i_pointer();
                 _size--;
                 _a.destroy(&*it);
                 it = begin();
             }
-
-
-
-            /*----OLD CODE----
-_a.destroy(&*it);
-_size--;
-if(it == begin())
-{
-it++;
-_front = (begin() + 1).i_pointer();
-}
-else if(it == end() - 1)
-{
-it--;
-_back = (end() - 1).i_pointer();
-}
-else
-{
-iterator temp = it;
-while(!(temp == end() - 1))
-{
-*temp = *(temp + 1);
-temp++;
-}
-_a.destroy(&*temp);
-_back = (end()-1).i_pointer();
-}
------------------*/
             assert(valid());
             return it;}
 
