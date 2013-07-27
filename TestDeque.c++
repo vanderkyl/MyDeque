@@ -6,234 +6,433 @@
 
 /*
 To test the program:
-    % ls -al /usr/include/gtest/
-    ...
-    gtest.h
-    ...
-    % locate libgtest.a
-    /usr/lib/libgtest.a
-
-    %locate libpthread.a
-    /usr/lib/x86_64-linux-gnu/libpthread.a
-    /usr/lib32/libpthread.a
-
-    % locate libgtest_main.a
-    /usr/lib/libgtest_main.a
-
-    % g++ -pedantic -std=c++0x -Wall Deque.c++ TestDeque.c++ -o TestDeque -lgtest -lpthread -lgtest_main
-
-    % valgrind TestDeque > TestDeque.out
+% ls /usr/include/cppunit/
+...
+TestFixture.h
+...
+% locate libcppunit.a
+/usr/lib/libcppunit.a
+% gincrement -pedantic -std=cincrement0x -Wall Deque.cincrement TestDeque.cincrement -o TestDeque -lcppunit -ldl
+% valgrind TestDeque > TestDeque.out
 */
 
 // --------
 // includes
 // --------
 
-#include <algorithm> // equal
-#include <cstring> // strcmp
+#include <algorithm> // copy, count, fill, reverse
 #include <deque> // deque
-#include <sstream> // ostringstream
-#include <stdexcept> // invalid_argument
-#include <string> // ==
-#include <iostream>
+#include <memory> // allocator
+
+#include "cppunit/extensions/HelperMacros.h" // CPPUNIT_TEST, CPPUNIT_TEST_SUITE, CPPUNIT_TEST_SUITE_END
+#include "cppunit/TestFixture.h" // TestFixture
+#include "cppunit/TestSuite.h" // TestSuite
+#include "cppunit/TextTestRunner.h" // TestRunner
 
 #include "Deque.h"
-#include "gtest/gtest.h"
-
-using namespace std;
 
 // ---------
 // TestDeque
 // ---------
 
+template <typename C>
+struct TestDeque : CppUnit::TestFixture {
+    
+    // ------------
+    // constructors
+    // ------------
 
-typedef testing::Types<deque<int>, MyDeque<int> > TestDeques;
+    void test_constructor1 () {
+        const C x;
+        const C y(10);
+        const C z(50, 2);
+        const C z2 = z;
+        assert(z == z2);
+    }
 
-template <typname C>
-class DequeTest : public testing::Test {
+    void test_constructor2 () {
+        const C x(100, 5);
+        const C y(50, 50);
+        const C z(y);
+        const C z2 = z;
+        assert(y == z);
+        assert(z == z2);
+    }
 
-};
+    // -------------
+    // test_equality
+    // -------------
 
-TYPED_TEST_CASE(DequeTest, TestDeques);
+    void test_equals1 () {
+        const C x(20, 3);
+        const C y(20, 3);
+        assert(x == y);}
+
+    void test_equals2 () {
+        const C x(50, 2);
+        const C y(50, 2);
+        assert(x == y);
+        assert(!(x != y));}
+
+    void test_equals3 () {
+        C x(45, 2);
+        x.push_back(2);
+        x.push_back(2);
+        x.push_back(2);
+        x.push_back(2);
+        x.push_back(2);
+        const C y(50, 2);
+        assert(x == y);
+        assert(!(x != y));}
 
 
-TYPED_TEST(DequeTest, iterator_operator_equal_01) {
-        ASSERT_TRUE(false);
-}
+    // ---------------
+    // test_comparison
+    // ---------------
 
-TYPED_TEST(DequeTest, iterator_valid_01) {
-        ASSERT_TRUE(false);
-}
+    void test_comparison1 () {
+        const C x(10, 2);
+        const C y(20, 3);
+        assert(x < y);
+        assert(!(x >= y));
+        assert(y > x);
+        assert(!(y <= x));}
 
-TYPED_TEST(DequeTest, iterator_default_constructor_01) {
-        ASSERT_TRUE(false);
-}
+    void test_comparison2 () {
+        const C x(10, 3);
+        const C y(20, 3);
+        assert(x < y);
+        assert(!(x >= y));
+        assert(y > x);
+        assert(!(y <= x));}
 
-TYPED_TEST(DequeTest, iterator_operator_deference_01) {
-        ASSERT_TRUE(false);
-}
+    void test_comparison3 () {
+        const C x(20, 2);
+        const C y(20, 3);
+        assert(x < y);
+        assert(!(x >= y));
+        assert(y > x);
+        assert(!(y <= x));}
 
-TYPED_TEST(DequeTest, iterator_operator_increment_prefix_01) {
-        ASSERT_TRUE(false);
-}
+    // ---------------
+    // test_assignment
+    // ---------------
 
-TYPED_TEST(DequeTest, iterator_operator_decrement_prefix_01) {
-        ASSERT_TRUE(false);
-}
+    void test_assignment1 () {
+              C x(10, 2);
+        const C y(20, 3);
+        x = y;
+        assert(x == y);}
 
-TYPED_TEST(DequeTest, iterator_operator_plus_equal_01) {
-        ASSERT_TRUE(false);
-}
+    void test_assignment2 () {
+              C x(20, 2);
+        const C y(10, 3);
+        x = y;
+        assert(x == y);}
 
-TYPED_TEST(DequeTest, iterator_operator_minus_equal_01) {
-        ASSERT_TRUE(false);
-}
+    void test_assignment3 () {
+              C x(10, 2);
+              x.pop_back();
+              x.pop_back();
+        const C y(10, 3);
+        x = y;
+        assert(x == y);}
 
-/*
---------------
-const_iterator
---------------
-*/
+    // --------------
+    // test_subscript
+    // --------------
 
-TYPED_TEST(DequeTest, const_iterator_operator_equal_01) {
-        ASSERT_TRUE(false);
-}
+    void test_subscript1 () {
+              C x(10, 2);
+        const C y(10, 2);
+        typename C::reference v = x[0];
+        typename C::const_reference w = y[0];
+        assert(v == w);}
 
-TYPED_TEST(DequeTest, const_iterator_valid_01) {
-        ASSERT_TRUE(false);
-}
+    void test_subscript2 () {
+              C x(10, 2);
+        const C y(10, 2);
+        typename C::reference v = x[3];
+        typename C::const_reference w = y[8];
+        assert(v == w);}
 
-TYPED_TEST(DequeTest, const_iterator_default_constructor_01) {
-        ASSERT_TRUE(false);
-}
+    void test_subscript3 () {
+        C x(10);
+        C y(10);
+        x.push_back(1);
+        x.push_back(1);
+        x.push_back(3);
+        x.push_back(1);
+        x.push_back(1);
+        y.push_back(1);
+        y.push_back(1);
+        y.push_back(3);
+        y.push_back(1);
+        y.push_back(1);
+        typename C::reference v = x[2];
+        typename C::const_reference w = y[2];
+        assert(v == w);}
 
-TYPED_TEST(DequeTest, const_iterator_operator_deference_01) {
-        ASSERT_TRUE(false);
-}
+    void test_subscript4 () {
+              C x(10, 2);
+        x.insert(x.begin() + 4, 0);
+        assert(x[4] == 0);}
 
-TYPED_TEST(DequeTest, const_iterator_operator_increment_prefix_01) {
-        ASSERT_TRUE(false);
-}
+    // -------
+    // test_at
+    // -------
 
-TYPED_TEST(DequeTest, const_iterator_operator_decrement_prefix_01) {
-        ASSERT_TRUE(false);
-}
+    void test_at () {
+              C x(10, 2);
+        const C y(10, 2);
+        typename C::reference v = x.at(0);
+        typename C::const_reference w = y.at(0);
+        assert(v == w);}
 
-TYPED_TEST(DequeTest, const_iterator_operator_plus_equal_01) {
-        ASSERT_TRUE(false);
-}
+    // ---------
+    // test_back
+    // ---------
 
-TYPED_TEST(DequeTest, const_iterator_operator_minus_equal_01) {
-        ASSERT_TRUE(false);
-}
+    void test_back () {
+              C x(10, 2);
+        const C y(10, 2);
+        typename C::reference v = x.back();
+        typename C::const_reference w = y.back();
+        assert(v == w);}
 
-/*
--------
-MyDeque
--------
-*/
+    // ----------
+    // test_begin
+    // ----------
 
-TYPED_TEST(DequeTest, deque_operator_equal_01) {
-        ASSERT_TRUE(false);
-}
+    void test_begin () {
+              C x(10, 2);
+        const C y(10, 2);
+        typename C::iterator p = x.begin();
+        typename C::const_iterator q = y.begin();
+        assert(*p == *q);}
 
-TYPED_TEST(DequeTest, deque_operator_less_than_01) {
-        ASSERT_TRUE(false);
-}
+    // ----------
+    // test_clear
+    // ----------
 
-TYPED_TEST(DequeTest, deque_valid_01) {
-        ASSERT_TRUE(false);
-}
+    void test_clear () {
+        C x(10, 2);
+        x.clear();
+        assert(x.empty());}
 
-TYPED_TEST(DequeTest, deque_constructor_allocator_01) {
-        ASSERT_TRUE(false);
-}
+    // ----------
+    // test_empty
+    // ----------
 
-TYPED_TEST(DequeTest, deque_constructor_size_value_allocator_01) {
-        ASSERT_TRUE(false);
-}
+    void test_empty () {
+        const C x;
+        const bool b = x.empty();
+        assert(b);}
 
-TYPED_TEST(DequeTest, deque_constructor_deque_01) {
-        ASSERT_TRUE(false);
-}
+    // --------
+    // test_end
+    // --------
 
-TYPED_TEST(DequeTest, deque_destructor_01) {
-        ASSERT_TRUE(false);
-}
+    void test_end () {
+              C x(10, 2);
+        const C y(10, 2);
+        typename C::iterator p = x.end();
+        typename C::const_iterator q = y.end();
+        assert(*(p-1) == *(q-1));}
 
-TYPED_TEST(DequeTest, deque_operator_assignment_01) {
-        ASSERT_TRUE(false);
-}
+    // ----------
+    // test_erase
+    // ----------
 
-TYPED_TEST(DequeTest, deque_operator_index_01) {
-        ASSERT_TRUE(false);
-}
+    void test_erase1 () {
+        C x(10, 2);
+        typename C::iterator p = x.erase(x.begin());
+        assert(p == x.begin());}
 
-TYPED_TEST(DequeTest, deque_at_01) {
-        ASSERT_TRUE(false);
-}
+    void test_erase2 () {
+        C x(10, 2);
+        C y(9, 2);
+        typename C::iterator p = x.erase(x.begin());
+        assert(p == x.begin());
+        assert(x == y);}
 
-TYPED_TEST(DequeTest, deque_back_01) {
-        ASSERT_TRUE(false);
-}
+    // ----------
+    // test_front
+    // ----------
 
-TYPED_TEST(DequeTest, deque_begin_01) {
-        ASSERT_TRUE(false);
-}
+    void test_front () {
+              C x(10, 2);
+        const C y(10, 2);
+        typename C::reference v = x.front();
+        typename C::const_reference w = y.front();
+        assert(v == w);}
 
-TYPED_TEST(DequeTest, deque_begin_const_01) {
-        ASSERT_TRUE(false);
-}
+    // ---------------
+    // test_push_front
+    // ---------------
 
-TYPED_TEST(DequeTest, deque_clear_01) {
-        ASSERT_TRUE(false);
-}
+    void test_push_front () {
+        C x(10, 2);
+        x.push_front(3);}
 
-TYPED_TEST(DequeTest, deque_end_01) {
-        ASSERT_TRUE(false);
-}
+    // -----------
+    // test_insert
+    // -----------
 
-TYPED_TEST(DequeTest, deque_end_const_01) {
-        ASSERT_TRUE(false);
-}
+    void test_insert () {
+        C x(10, 2);
+        typename C::iterator p = x.insert(x.begin(), 3);
+        assert(p == x.begin());}
+        
 
-TYPED_TEST(DequeTest, deque_erase_01) {
-        ASSERT_TRUE(false);
-}
+    // -------------
+    // test_pop_back
+    // -------------
 
-TYPED_TEST(DequeTest, deque_front_01) {
-        ASSERT_TRUE(false);
-}
+    void test_pop_back () {
+        C x(10, 2);
+        x.pop_back();}
 
-TYPED_TEST(DequeTest, deque_insert_01) {
-        ASSERT_TRUE(false);
-}
+    // --------------
+    // test_push_back
+    // --------------
 
-TYPED_TEST(DequeTest, pop_back_01) {
-        ASSERT_TRUE(false);
-}
+    void test_push_back () {
+        C x(10, 2);
+        x.push_back(3);}
 
-TYPED_TEST(DequeTest, pop_front_01) {
-        ASSERT_TRUE(false);
-}
+    // -----------
+    // test_resize
+    // -----------
 
-TYPED_TEST(DequeTest, push_back_01) {
-        ASSERT_TRUE(false);
-}
+    void test_resize () {
+        C x(10, 2);
+        x.resize(20);
+        x.resize(30, 3);}
 
-TYPED_TEST(DequeTest, push_front_01) {
-        ASSERT_TRUE(false);
-}
+    // ---------
+    // test_size
+    // ---------
 
-TYPED_TEST(DequeTest, resize_01) {
-        ASSERT_TRUE(false);
-}
+    void test_size () {
+        const C x;
+        assert(x.size() == 0);}
 
-TYPED_TEST(DequeTest, size_01) {
-        ASSERT_TRUE(false);
-}
+    // ---------
+    // test_swap
+    // ---------
 
-TYPED_TEST(DequeTest, swap_01) {
-        ASSERT_TRUE(false);
-}
+    void test_swap () {
+        C x(10, 2);
+        C y(20, 3);
+        x.swap(y);}
 
+    // -------------
+    // test_iterator
+    // -------------
+
+    void test_iterator () {
+        C x(10, 2);
+        typename C::iterator b = x.begin();
+        assert(b == x.begin());
+        typename C::reference v = *b;
+        ++b;
+        b += 2;
+        --b;
+        b -= 2;
+        typename C::reference w = *b;
+        assert(v == w);}
+
+    // -------------------
+    // test_const_iterator
+    // -------------------
+
+    void test_const_iterator1 () {
+        const C x(10, 2);
+        typename C::const_iterator b = x.begin();
+        assert(b == x.begin());
+        typename C::const_reference v = *b;
+        ++b;
+        b += 2;
+        --b;
+        b -= 2;
+        typename C::const_reference w = *b;
+        assert(v == w);}
+
+    void test_const_iterator2 () {
+        const C x(10, 2);
+        typename C::const_iterator b = x.begin();
+        typename C::const_iterator e = x.end();
+        assert(b + x.size() == e);}
+
+    // ---------------
+    // test_algorithms
+    // ---------------
+
+    void test_algorithms () {
+              C x(10, 2);
+        const C y(10, 2);
+        assert(std::count(y.begin(), y.end(), 3) == 0);
+        std::copy(y.begin(), y.end(), x.begin());
+        std::fill(x.begin(), x.end(), 2);
+        std::reverse(x.begin(), x.end());}
+
+    // -----
+    // suite
+    // -----
+
+    CPPUNIT_TEST_SUITE(TestDeque);
+    CPPUNIT_TEST(test_constructor1);
+    CPPUNIT_TEST(test_constructor2);
+    CPPUNIT_TEST(test_equals1);
+    CPPUNIT_TEST(test_equals2);
+    CPPUNIT_TEST(test_equals3);
+    CPPUNIT_TEST(test_comparison1);
+    CPPUNIT_TEST(test_comparison2);
+    CPPUNIT_TEST(test_comparison3);
+    CPPUNIT_TEST(test_assignment1);
+    CPPUNIT_TEST(test_assignment2);
+    CPPUNIT_TEST(test_assignment3);
+    CPPUNIT_TEST(test_subscript1);
+    CPPUNIT_TEST(test_subscript2);
+    CPPUNIT_TEST(test_subscript3);
+    CPPUNIT_TEST(test_at);
+    CPPUNIT_TEST(test_back);
+    CPPUNIT_TEST(test_begin);
+    CPPUNIT_TEST(test_clear);
+    CPPUNIT_TEST(test_empty);
+    CPPUNIT_TEST(test_end);
+    CPPUNIT_TEST(test_erase1);
+    CPPUNIT_TEST(test_erase2);
+    CPPUNIT_TEST(test_front);
+    CPPUNIT_TEST(test_push_front);
+    CPPUNIT_TEST(test_insert);
+    CPPUNIT_TEST(test_pop_back);
+    CPPUNIT_TEST(test_push_back);
+    CPPUNIT_TEST(test_resize);
+    CPPUNIT_TEST(test_size);
+    CPPUNIT_TEST(test_swap);
+    CPPUNIT_TEST(test_iterator);
+    CPPUNIT_TEST(test_const_iterator1);
+    CPPUNIT_TEST(test_const_iterator2);
+    CPPUNIT_TEST(test_algorithms);
+    CPPUNIT_TEST_SUITE_END();};
+
+// ----
+// main
+// ----
+
+int main () {
+    using namespace std;
+    ios_base::sync_with_stdio(false); // turn off synchronization with C I/O
+    cout << "TestDeque.c++" << endl;
+
+    CppUnit::TextTestRunner tr;
+    tr.addTest(TestDeque< std::deque<int> >::suite());
+    tr.addTest(TestDeque< std::deque<int, std::allocator<int> > >::suite());
+    tr.addTest(TestDeque< MyDeque<int> >::suite());
+    tr.addTest(TestDeque< MyDeque<int, std::allocator<int> > >::suite());
+    tr.run();
+
+    cout << "Done." << endl;
+    return 0;}
